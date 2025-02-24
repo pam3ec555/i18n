@@ -69,17 +69,22 @@ class CompositeMessageLookup implements MessageLookup {
   /// mechanism for that locale.
   @override
   void addLocale(String localeName, Function findLocale) {
-    if (localeExists(localeName)) return;
     var canonical = Intl.canonicalizedLocale(localeName);
     var newLocale = findLocale(canonical);
-    if (newLocale != null) {
+    if (newLocale == null) {
+      return;
+    }
+    if (localeExists(localeName)) {
+      availableMessages[localeName]?.messages.addAll(newLocale.messages);
+      availableMessages[canonical]?.messages.addAll(newLocale.messages);
+    } else {
       availableMessages[localeName] = newLocale;
       availableMessages[canonical] = newLocale;
-      // If there was already a failed lookup for [localeName], null the cache.
-      if (_lastLocale == localeName) {
-        _lastLocale = null;
-        _lastLookup = null;
-      }
+    }
+    // If there was already a failed lookup for [localeName], null the cache.
+    if (_lastLocale == localeName) {
+      _lastLocale = null;
+      _lastLookup = null;
     }
   }
 }
@@ -138,5 +143,5 @@ abstract class MessageLookupByLibrary {
   /// Return a function that returns the given string.
   /// An optimization for dart2js, used from the generated code.
   static String Function() simpleMessage(translatedString) =>
-      () => translatedString;
+          () => translatedString;
 }
